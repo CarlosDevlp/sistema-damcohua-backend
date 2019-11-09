@@ -137,7 +137,7 @@ class ClientesController extends Controller
         if($request->has('tipo_examen')) $ficha_medica->tipo_examen= $request->tipo_examen;
         $ficha_medica->grupo_sanguineo_id= $request->grupo_sanguineo_id;
         if($request->has('observaciones')) $ficha_medica->observaciones= $request->observaciones;
-        //$ficha_medica->empleados_id= $request->empleados_id;
+        $ficha_medica->empleados_id= $request->empleados_id;
         $ficha_medica->save();
         return response()->json([
             'status' => 'ok',
@@ -254,5 +254,34 @@ class ClientesController extends Controller
 			'status' => 'cliente_dni_redundante',
 			'message'=>'El dni del cliente no puede ser repetido'
 		]);
+    }
+
+
+    public function eliminarCliente($id){
+        try{
+            $cliente=Cliente::find($id);
+            
+            DB::beginTransaction();
+
+            $examenReglas=ExamenReglas::where('clientes_personas_id','=',$cliente->personas_id)->first();
+            $fichaMedica= FichaMedica::where('clientes_personas_id','=',$cliente->personas_id)->first();
+            if($examenReglas!=null) $examenReglas->delete();
+            if($fichaMedica!=null) $fichaMedica->delete();
+            
+            $cliente->delete();
+            
+            DB::commit();
+    
+        }catch(QueryException $e){
+            DB::rollback();
+            return response()->json([
+                'status' => 'cliente_notdeleted',
+                'message'=>'No se pudo eliminar al cliente'
+            ]);
+        }
+        return response()->json([
+            'status' => 'ok',
+            'message'=>'Se ha eliminado al cliente seleccionado'
+        ]);    
     }
 }

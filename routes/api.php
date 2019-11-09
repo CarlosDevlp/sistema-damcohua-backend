@@ -65,6 +65,7 @@ Route::group(['middleware' => 'jwt'], function () {
     Route::post('/clientes/actualizar/{id}', 'ClientesController@actualizarCliente');
     Route::get('/clientes', 'ClientesController@getClientes');
     Route::get('/clientes/count','ClientesController@contarClientes');
+    Route::delete('/clientes/{id}','ClientesController@eliminarCliente');
     Route::get('/cliente/{id}', 'ClientesController@getCliente');
         //examen de reglas
         Route::post('/clientes/{id}/examenes-reglas', 'ClientesController@mantenerExamenReglas');
@@ -84,3 +85,21 @@ Route::group(['middleware' => 'jwt'], function () {
     });
 });
 
+
+//api del mtc
+Route::group(['prefix' => 'mtc'], function () {
+    
+    Route::post('/fichas-medicas/{id}', 'MTCController@registrarFichaMedica');
+    Route::post('/examenes-reglas/{id}', 'MTCController@registrarExamenReglas');
+
+    Route::get('/fichas-medicas', 'MTCController@obtenerFichasMedicas');
+    Route::get('/examenes-reglas', 'MTCController@obtenerExamenesReglas');
+
+
+    Route::get('/foo', function(){
+		return  response()->json([
+			'status' => 'ok',
+			'data' => 'hola'
+        ], 200); 
+    });
+});

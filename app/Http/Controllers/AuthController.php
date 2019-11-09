@@ -11,10 +11,16 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use App\GlobalConstants;
 use App\TipoUsuario;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
 
 class AuthController extends Controller
 {
+	use AuthenticatesUsers;
     public  $loginAfterSignUp = true;
+	//protected $maxLoginAttempts=2;
+	//protected $lockoutTime=300;
+	protected $maxAttempts=2;
+	protected $decayMinutes=1;
 
 	public  function  register(Request  $request) {
 		
@@ -50,7 +56,15 @@ class AuthController extends Controller
 	public  function  login(Request  $request) {
 		$input = $request->only('surname', 'password');
 		$jwt_token = null;
+
+		if ($this->hasTooManyLoginAttempts($request)) {
+            $this->fireLockoutEvent($request);
+			return response()->json(['status' => 'too_many_logins',
+									'message' => 'Muchos intentos de Logeo, espere 1 minuto'], 400);
+      	}
+
 		if (!$jwt_token = JWTAuth::attempt($input)) { //email o password inválido
+			$this->incrementLoginAttempts($request);
 			return  response()->json([
 				'status' => 'invalid_credentials',
 				'message' => 'Username o contraseña no válidos.',
