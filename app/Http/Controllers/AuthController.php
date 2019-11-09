@@ -53,7 +53,7 @@ class AuthController extends Controller
 		if (!$jwt_token = JWTAuth::attempt($input)) { //email o password inválido
 			return  response()->json([
 				'status' => 'invalid_credentials',
-				'message' => 'Correo o contraseña no válidos.',
+				'message' => 'Username o contraseña no válidos.',
 			], 401);
 		}
 		$usuario_empleado=DB::table('empleados')

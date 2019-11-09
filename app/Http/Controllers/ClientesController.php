@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Cliente;
 use App\Persona;
 use App\GlobalConstants;
+use App\ExamenReglas;
+use App\FichaMedica;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -13,7 +15,7 @@ class ClientesController extends Controller
 {
     function getClientes(){
         $clientes=DB::table('clientes')
-                    ->select('*',DB::raw('CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",personas.foto_adjunto) as foto_adjunto, '.
+                    ->select('*',DB::raw('clientes.id as cliente_id, CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",personas.foto_adjunto) as foto_adjunto, '.
                             'CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",COALESCE(clientes.adjunto,"")) as adjunto'))
                     ->join('personas','personas.id','=','clientes.personas_id')
                     ->get();
@@ -24,6 +26,16 @@ class ClientesController extends Controller
 		]);
     }
 
+    function contarClientes(){
+        $clientes_count=DB::table('clientes')
+                    ->select(DB::raw('COUNT(*) as cantidad'))
+                    ->get();
+                    
+        return response()->json([
+			'status' => 'ok',
+			'data'=>$clientes_count->toArray()
+		]);
+    }
 
     function getCliente($id){
         $clientes=DB::table('clientes')
@@ -39,10 +51,101 @@ class ClientesController extends Controller
 		]);
     }
 
-    public function actualizarCliente(Request $request,$id){
-        
-        
+    /**
+     * obtener examen de reglas de un cliente
+     */
+    public function obtenerExamenRegla($id){
+        $examen_reglas=ExamenReglas::where('clientes_personas_id','=',$id)
+                                        ->select('*',DB::raw('CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",COALESCE(adjunto,"")) as adjunto'))
+                                        ->first();
+        if($examen_reglas==null){
+            return response()->json([
+                'status' => 'examenreglas_notfound',
+                'message' => 'No se han encontrado ningun registro de examen de reglas'
+            ]);
+        }
 
+        return response()->json([
+			'status' => 'ok',
+			'data'=>$examen_reglas->toArray()
+		]);
+    }
+
+    /**
+     * registrar o actualizar el examen de reglas de un cliente
+     */
+    public function mantenerExamenReglas($id, Request $request){
+        $examen_reglas=ExamenReglas::where('clientes_personas_id','=',$id)->first();
+        if($examen_reglas==null){
+            $examen_reglas=new ExamenReglas();
+            $examen_reglas->clientes_personas_id= $id;
+        }
+        if($request->has('servicio_solicitado')) $examen_reglas->servicio_solicitado= $request->servicio_solicitado;
+        if($request->has('nro_recibo_operacion')) $examen_reglas->nro_recibo_operacion= $request->nro_recibo_operacion;
+        $examen_reglas->clase_categoria_id= $request->clase_categoria_id;
+        if($request->has('fecha_evaluacion')) $examen_reglas->fecha_evaluacion= $request->fecha_evaluacion;
+        if($request->has('restricciones')) $examen_reglas->restricciones= $request->restricciones;
+        if($request->has('observaciones')) $examen_reglas->observaciones= $request->observaciones;
+        $examen_reglas->empleados_id= $request->empleados_id;
+        if($request->hasFile('adjunto')){
+            $path = $request->adjunto->store('adjunto');
+            $examen_reglas->adjunto=$path;
+        }
+        $examen_reglas->save();
+        
+        return response()->json([
+            'status' => 'ok',
+            'message'=>'Los datos del examen de reglas se guardaron correctamente'
+        ]);
+    }
+
+    /**
+     * obtener la ficha médica de un cliente
+     */
+    public function obtenerFichaMedica($id){
+        $ficha_medica=FichaMedica::where('clientes_personas_id','=',$id)
+                                    ->select('*',DB::raw('CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",COALESCE(adjunto,"")) as adjunto'))
+                                    ->first();
+        if($ficha_medica==null){
+            return response()->json([
+                'status' => 'fichamedica_notfound',
+                'message' => 'No se han encontrado ningun registro de ficha médica'
+            ]);
+        }
+
+        return response()->json([
+			'status' => 'ok',
+			'data'=>$ficha_medica->toArray()
+		]);
+    }
+
+    /**
+     * registrar o actualizar ficha médica de un cliente
+     */
+    public function mantenerFichaMedica($id, Request $request ){
+        $ficha_medica=FichaMedica::where('clientes_personas_id','=',$id)->first();
+        if($ficha_medica==null){
+            $ficha_medica=new FichaMedica();
+            $ficha_medica->clientes_personas_id= $id;
+        }
+        if($request->has('fecha_evaluacion')) $ficha_medica->fecha_evaluacion= $request->fecha_evaluacion;
+        if($request->has('tipo_resultado_examen')) $ficha_medica->tipo_resultado_examen= $request->tipo_resultado_examen;
+        if($request->hasFile('adjunto')){
+            $path = $request->adjunto->store('adjunto');
+            $ficha_medica->adjunto=$path;
+        }
+        if($request->has('tipo_examen')) $ficha_medica->tipo_examen= $request->tipo_examen;
+        $ficha_medica->grupo_sanguineo_id= $request->grupo_sanguineo_id;
+        if($request->has('observaciones')) $ficha_medica->observaciones= $request->observaciones;
+        //$ficha_medica->empleados_id= $request->empleados_id;
+        $ficha_medica->save();
+        return response()->json([
+            'status' => 'ok',
+            'message'=>'Los datos de la ficha médica se guardaron correctamente'
+        ]);
+    }
+
+    public function actualizarCliente(Request $request,$id){
         $clientes=Cliente::where('personas_id','=',$id)->get();
         if(count($clientes)>0){
             $cliente=$clientes[0];
@@ -65,7 +168,6 @@ class ClientesController extends Controller
                 if($request->has('telefonos')) $persona->telefonos= $request->telefonos;
                 if($request->has('estado_civil')) $persona->estado_civil= $request->estado_civil;
 
-                $persona->foto_adjunto=GlobalConstants::$IMAGE_DEFAULT_URL;
                 if($request->hasFile('foto_adjunto')){
                     $path = $request->foto_adjunto->store('imagenes');
                     $persona->foto_adjunto=$path;

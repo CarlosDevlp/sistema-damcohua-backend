@@ -53,6 +53,7 @@ Route::group(['middleware' => 'jwt'], function () {
     Route::post('/empleados/actualizar/{id}', 'EmpleadosController@actualizarEmpleado');
     Route::get('/empleados', 'EmpleadosController@obtenerEmpleados');
     Route::get('/empleados/usuarios','EmpleadosController@obtenerEmpleadosUsuarios');
+    Route::get('/empleados/count','EmpleadosController@contarEmpleados');
     Route::get('/empleados/{id}', 'EmpleadosController@obtenerEmpleado');
     Route::post('/empleados/usuarios/{id}/actualizar', 'EmpleadosController@actualizarUsuarioEmpleado');
     Route::delete('/empleados/usuarios/{id}','EmpleadosController@eliminarUsuarioEmpleado');
@@ -63,7 +64,15 @@ Route::group(['middleware' => 'jwt'], function () {
     Route::post('/clientes', 'ClientesController@registrarCliente');
     Route::post('/clientes/actualizar/{id}', 'ClientesController@actualizarCliente');
     Route::get('/clientes', 'ClientesController@getClientes');
+    Route::get('/clientes/count','ClientesController@contarClientes');
     Route::get('/cliente/{id}', 'ClientesController@getCliente');
+        //examen de reglas
+        Route::post('/clientes/{id}/examenes-reglas', 'ClientesController@mantenerExamenReglas');
+        Route::get('/clientes/{id}/examenes-reglas', 'ClientesController@obtenerExamenRegla');
+        //ficha médica
+        Route::post('/clientes/{id}/fichas-medicas', 'ClientesController@mantenerFichaMedica');
+        Route::get('/clientes/{id}/fichas-medicas', 'ClientesController@obtenerFichaMedica');
+
     Route::get('/foo', function(){
         
 		return  response()->json([

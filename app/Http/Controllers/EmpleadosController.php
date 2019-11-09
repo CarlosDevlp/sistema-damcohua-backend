@@ -14,15 +14,36 @@ class EmpleadosController extends Controller
 {
     
 
-    public function obtenerEmpleados(){
-        $empleados=DB::table('empleados')
+    public function obtenerEmpleados(Request $request){
+        if($request->has('rol')){
+            $empleado_rol_id=$request->query('rol');
+            $empleados=DB::table('empleados')
+                    ->select('*',DB::raw('empleados.id as empleados_id, personas.id as personas_id , CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",personas.foto_adjunto) as foto_adjunto'))
+                    ->join('personas','personas.id','=','empleados.personas_id')
+                    ->where('tipo_empleado_id','=',$empleado_rol_id)
+                    ->get();
+        }else{
+            $empleados=DB::table('empleados')
                     ->select('*',DB::raw('empleados.id as empleados_id, personas.id as personas_id , CONCAT("'.GlobalConstants::$STORAGE_DIRECTORY_URL.'",personas.foto_adjunto) as foto_adjunto'))
                     ->join('personas','personas.id','=','empleados.personas_id')
                     ->get();
+        }
+        
                     
         return response()->json([
 			'status' => 'ok',
 			'data'=>$empleados->toArray()
+		]);
+    }
+
+    function contarEmpleados(){
+        $empleados_count=DB::table('empleados')
+                    ->select(DB::raw('COUNT(*) as cantidad'))
+                    ->get();
+                    
+        return response()->json([
+			'status' => 'ok',
+			'data'=>$empleados_count->toArray()
 		]);
     }
 
